@@ -1,7 +1,7 @@
-mypath1="S:\Папки\70927 Минск, Северо-Западное\S-21 Карточки собрания для отчетов возвещателей\Возвещатели" # папки бланков S-21, пропишите здесь полные пути
-mypath2="S:\Папки\70927 Минск, Северо-Западное\S-21 Карточки собрания для отчетов возвещателей\Возвещатели некрещеные"
-mypath3="S:\Папки\70927 Минск, Северо-Западное\S-21 Карточки собрания для отчетов возвещателей\Пионеры"
-mypath4="S:\Папки\70927 Минск, Северо-Западное\S-21 Карточки собрания для отчетов возвещателей\Пионеры подсобные"
+mypath1="D:\Мои документы\Отчеты\Возвещатели" # папки бланков S-21, пропишите здесь полные пути
+mypath2="D:\Мои документы\Отчеты\Возвещатели некрещеные"
+mypath3="D:\Мои документы\Отчеты\Пионеры"
+mypath4="D:\Мои документы\Отчеты\Пионеры подсобные"
 PDFViwer="C:\Program Files\Tracker Software\PDF Viewer\PDFXCview.exe" # полный путь к PDF-читалке
 Filename="publishers.txt" # файл с возвещателями
 Delimeter="\t" # разделитель данных при вводе
@@ -153,23 +153,6 @@ def stats(pub):
     print("Подсобные пионеры:\nЧисло сдавших отчет: %d\nЧасы: %.1f\nПовторные посещения: %d\nИзучения Библии: %d\n" % (countAP, countAP_Hours, countAP_Ret, countAP_St))
     print("Пионеры:\nЧисло сдавших отчет: %d\nЧасы: %.1f\nПовторные посещения: %d\nИзучения Библии: %d\n" % (countRP, countRP_Hours, countRP_Ret, countRP_St))
     print("Активные возвещатели: %d" % len(pub))
-    
-def statsCO(pub):
-    """Дополнительная статистика для РН (команда =2)"""
-    countP_Pub=countP_Vid=countAP_Pub=countAP_Vid=countRP_Pub=countRP_Vid=0
-    for row in pub:
-        if("подсобные\\" in row[0] and row[3]!=""):
-            countAP_Pub+=int(row[1])
-            countAP_Vid+=int(row[2])
-        elif("\\Пионеры\\" in row[0] and row[3]!=""):
-            countRP_Pub+=int(row[1])
-            countRP_Vid+=int(row[2])
-        elif("\\Возвещатели\\" in row[0] and row[3]!=""):
-            countP_Pub+=int(row[1])
-            countP_Vid+=int(row[2])
-    print("Возвещатели:\nПубликации: %d\nВидео: %d\n" % (countP_Pub, countP_Vid))
-    print("Подсобные пионеры:\nПубликации: %d\nВидео: %d\n" % (countAP_Pub, countAP_Vid))
-    print("Пионеры:\nПубликации: %d\nВидео: %d\n" % (countRP_Pub, countRP_Vid))
 
 def reprow():
     """Подстановка данных в буфер обмена"""
@@ -232,8 +215,6 @@ while 1:
         pub=load()        
     elif command=="=":
         stats(pub)
-    elif command=="=2":
-        statsCO(pub)
     elif command=="\\":
         webbrowser.open(Filename)
     elif command=="+":
