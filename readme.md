@@ -8,7 +8,7 @@
 
 ## Установка и настройка
 
-* Скачайте Python с [python.org](https://www.python.org/).
+* Скачайте и установите Python с [python.org](https://www.python.org/).
 
 * Доустановите библиотеки keyboard, xlrd и glob. Для этого в терминале (в режиме администратора) введите:
 ```
