@@ -123,7 +123,7 @@ def recreate():
         files = files + [mypath4+f for f in listdir(mypath4) if isfile(join(mypath4, f))]
         print("Сброс файла данных и перезагрузка из папок…")
     except:
-        print("Не найдены нужные папки, проверьте настройки")
+        print("Не найдены нужные папки, проверьте настройки.")
         return
     files.sort(key=lambda x: x[0])    
     with open(Filename, "w", encoding="utf-8") as datafile:
