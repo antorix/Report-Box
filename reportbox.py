@@ -17,6 +17,9 @@ import webbrowser
 from os.path import isfile, join
 import shutil
 import time
+import tkinter
+import tkinter.messagebox
+import tkinter.filedialog
 import datetime
 import requests
 import _thread
@@ -169,8 +172,7 @@ def Pub_add(string):
             else:
                 print("Не найден бланк S-21! Укажите местоположение этого\n"+\
                       "бланка в формате PDF...")
-                from tkinter import filedialog
-                S21 = filedialog.askopenfilename()
+                S21 = tkinter.filedialog.askopenfilename()
                 if S21 != "":
                     shutil.copyfile(S21, f"{Root_path}\\S-21_U.pdf") # копируем пустой бланк S-21 в папку программы на будущее
                 else:
@@ -371,12 +373,17 @@ def Pub_rename(line1, Pub2):
     if path is not None:
         oldPubPath = Pub[line1][0]
         newPubPath = f"{path}{Pub2}.pdf"
+
+        for p in Pub:
+            if p[0] == newPubPath:
+                print("Уже есть возвещатель в этой категории с таким именем!")
+                return
+
         try:
             os.rename(oldPubPath, newPubPath)
             Pub[line1][0] = newPubPath
         except:
-            print(f"Ошибка. Либо целевой возвещатель уже существует, либо открыт\n"+\
-                  f"PDF-файл исходного возвещателя.")
+            print(f"Не удалось переименовать – скорее всего, открыт PDF-файл.")
             return
         else:
             save()
@@ -487,7 +494,9 @@ def update():
                     shutil.move(f"{downloadedFolder}\\reportbox.py", Root_path)
                     shutil.rmtree(downloadedFolder)
                 except: pass
-                else: print("Найдена новая версия программы, она обновится при\nследующем запуске!")
+                else:
+                    tkinter.messagebox.showinfo(title="Внимание",
+                        message="Найдена новая версия программы, она обновится при следующем запуске!")
             else: pass
     _thread.start_new_thread(__update, ("Thread-Update", 3,))
 
