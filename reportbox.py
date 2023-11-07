@@ -4,20 +4,18 @@
 import os
 Root_path = os.path.dirname(os.path.abspath(__file__)) + "\\" # корневая папка, в которой лежат подпапки возвещателей и файлы программы
 Subpath = []
-Subpath.append(Root_path + "Возвещатели\\") # подпапки с файлами бланков S-21, здесь их при желании можно переименовать, но их должно быть только 3
+Subpath.append(Root_path + "Возвещатели\\") # подпапки с файлами бланков S-21
 Subpath.append(Root_path + "Подсобные пионеры\\")
 Subpath.append(Root_path + "Общие пионеры\\")
-Version = 1 # это самая новая версия!
-Update = True # проверка обновлений, выберите False, чтобы отключить
-Filename = Root_path + "publishers.txt" # файл с собственной базой данных возвещателей
+Version = 1
+Filename = Root_path + "publishers.ini" # файл с собственной базой данных возвещателей
 Values = []
-Max_Name_Len = 0
-Docmode = True # документированный режим, в общем доступе всегда True
-
+Bullet = "•" #→●•○▪
+Docmode = True # документированный режим, в котором работают только функции, описанные в документации
 
 import webbrowser
 from os.path import isfile, join
-from shutil import copyfile
+import shutil
 import time
 import datetime
 import requests
@@ -36,17 +34,18 @@ if "dev" in argv: # переопределение переменных из с�
     Devmode = True
     Docmode = False
     print("Dev mode on")
-else: Devmode = False
+else:
+    Devmode = False
 
 ###
 
 def load():
     """ Загрузка базы возвещателей из файла """
     publishers = []
-    #global Max_Name_Len
+    print("Ищу базу данных в файле publishers.ini...")
     if not os.path.exists(Filename):
-        print("Файл базы данных не найден.")
-    else:       
+        print("Файл данных не найден.")
+    else:
         with open(Filename, "r", encoding="utf-8") as f: lines=[line for line in f]
         for i in range(len(lines)):
             publishers.append(["", 0, 0, 0])
@@ -67,20 +66,20 @@ def load():
             except: publishers[i][2] = 0
             try: publishers[i][3] = int(lines[i][tPos[2]: tPos[3]].strip())  # кредит
             except: publishers[i][3] = 0
-            #if len(publishers[i][0]) > Max_Name_Len: Max_Name_Len = len(publishers[i][0])
+        print("Файл данных успешно загружен.")
 
     return publishers
-    
+
 def save():
     """ Выгрузка базы данных в файл """
-    try: Pub.sort(key=lambda x: x[0])
-    except: pass
+    Pub.sort(key=lambda x: x[0])
     with open(Filename, "w", encoding="utf-8") as datafile:
         for row in Pub:
             datafile.write(f"{row[0]}\t{row[1]}\t{row[2]}\t{row[3]}\n")
 
 def fetch(command):
     """ Интерпретация строки отчета - перевод простой строки в список из имени возвещателя и 4 параметров """
+    print(f"> {command}\nВот что нашлось по вашему запросу:")
     for delimeter in [" ", "\t"]:
         try:
             if delimeter in command:
@@ -114,26 +113,55 @@ def Pub_delete(line):
     try:
         os.remove(Pub[line][0])
         del Pub[line]
-        save()
-    except: print("Удаление не сработало. Возможно, этот файл открыт.\n"+\
+    except:
+        if os.path.exists(Pub[line][0]):
+            print("Удаление не сработало. Возможно, этот файл открыт.\n"+\
                   "Закройте его и попробуйте еще раз.")
-    else: print("Возвещатель успешно удален.")
+            return False
+        else:
+            del Pub[line] # если файла нет, удаляем только из базы
+            print("Возвещатель успешно удален из базы данных, но его\nPDF-файл отсутствует в папках!")
+            save()
+    else:
+        print("Возвещатель успешно удален.")
+        save()
+
+def nullify():
+    """ Обнуление всех отчетов """
+    choice = 0
+    try:
+        choice = int(input(
+            "Внимание! Все отчеты возвещателей за отчетный месяц будут\n"+\
+            "удалены. Перед этим копия файла данных будет сохранена в папке\n"+\
+            "«Архив». Обычно это нужно делать в начале нового месяца.\n"+\
+            "Продолжать?\n[1] Да\n[0] Нет\n"))
+    except: cls()
+    if choice == 1:
+        if os.path.exists(Filename):
+            savedTime = time.strftime("%Y-%m-%d_%H%M%S", time.localtime())
+            if not os.path.exists(f"{Root_path}\\Архив"):
+                os.makedirs(f"{Root_path}\\Архив")
+            shutil.copyfile(Filename, f"{Root_path}\\Архив\\publishers-{savedTime}.ini")
+        for p in Pub:
+            p[1] = p[2] = p[3] = 0
+        save()
+        print("Отчеты успешно обнулены.")
+    else: cls()
 
 def Pub_add(string):
     """ Создание нового возвещателя """
     S21 = Root_path + "S-21_U.pdf"
-    name = string[1:]
+    name = string[1:].strip()
     type = getPath()
     newFileName = f"{type}{name}.pdf"
     for p in Pub:
         if p[0] == newFileName:
-            print("Уже есть возвещатель такого типа с таким именем!")
+            print("Уже есть возвещатель в этой категории с таким именем!")
             return
     if type is not None:
         while 1:
             if os.path.exists(S21):
-
-                copyfile(S21, newFileName)
+                shutil.copyfile(S21, newFileName)
                 Pub.append([newFileName, 0, 0, 0])
                 print(f"Возвещатель '{newFileName}' успешно создан.")
                 save()
@@ -143,21 +171,33 @@ def Pub_add(string):
                       "бланка в формате PDF...")
                 from tkinter import filedialog
                 S21 = filedialog.askopenfilename()
-                copyfile(S21, f"{Root_path}\\S-21_U.pdf") # копируем пустой бланк S-21 в папку программы на будущее
+                if S21 != "":
+                    shutil.copyfile(S21, f"{Root_path}\\S-21_U.pdf") # копируем пустой бланк S-21 в папку программы на будущее
+                else:
+                    print("Для создания возвещателей программе нужен бланк S-21 в\n"+\
+                          "формате PDF. Вы знаете, где его найти.")
+                    break
 
 def search(myinput, process=True):
     """ Поиск возвещателя и ввод его данных. Возвращает индекс строки в массиве Pub с этим возвещателем """
     name=myinput[0]
-    print("Ищу %s..." % name)
     line = None
     found=[]
+    max_len = 0
 
     for i in range(len(Pub)):
         entry = format_title(Pub[i][0].strip(), cut_path=True)
-        if name.lower() in entry.lower():
-            print(f"Найдено: {'{:>3}│'.format(str(len(found)+1))} {format_title(Pub[i][0].strip())} {format_report_string(Pub[i])}")
+        if name.lower() in entry.lower(): # сначала просто находим строки и обсчитываем ширину колонки
+            string = f"{format_title(Pub[i][0].strip())}"
+            if len(string) > max_len: max_len = len(string)
             line=i
             found.append(line)
+
+    for f, i in zip(found, range(len(found))): # выводим результаты
+        if len(found) == 1:
+            print(f"{Bullet} {format_title(Pub[f][0].strip(), max_len)} {format_report_string(Pub[f])}")
+        elif len(found) > 1:
+            print(f"{'{:>3}'.format(i+1)} {Bullet} {format_title(Pub[f][0].strip(), max_len)} {format_report_string(Pub[f])}")
 
     if len(found)==0: # если запрошенного имени нет
         print("Ничего не найдено.")
@@ -165,7 +205,7 @@ def search(myinput, process=True):
     elif len(found)>1: # если запрошенных вариантов несколько
         while 1:
             try:
-                value = input("Введите номер варианта или Enter для отмены: ")
+                value = input("Введите номер варианта или Enter для отмены: ").strip()
                 if value=="":
                     cls()
                     return None
@@ -173,69 +213,89 @@ def search(myinput, process=True):
                     webbrowser.open("https://docs.google.com/spreadsheets/d/1POVv-2nM4rGd6-MOITwA-0hNHmqHe9QH/edit#gid=1676049882")
                 else:
                     line=found[int(value)-1]
-                    print(f"Ваш выбор:\n{format_title(Pub[line][0])} {format_report_string(Pub[line])})")
+                    print(f"Ваш выбор:\n{Bullet} {format_title(Pub[line][0])} {format_report_string(Pub[line])}")
                     break
             except:
-                print("Ошибка, попробуйте еще раз.")
                 continue
 
     if line is not None and myinput[1]+myinput[2]+myinput[3] == 0: # открытие возвещателя без ввода статистики, с меню для выбора
-        try:
-            option = int(input("Что нужно сделать (введите номер варианта):\n1│ Открыть PDF-файл\n2│ Обнулить отчет\n3│ Переименовать/переместить\n4│ Удалить\n"))
-        except: option = 0
-        if option == 1:
-            print("Открываю PDF-файл...")
-            webbrowser.open(Pub[line][0])
-        elif option == 2:
-            Pub[line][1] = Pub[line][2] = Pub[line][3] = 0
-            print("Отчет возвещателя обнулен.")
-            save()
-        elif option == 3:
-            new_name = input("Введите новое название файла для этого возвещателя:\n")
-            Pub_rename(line, new_name)
-        elif option == 4:
-            Pub_delete(line)
-        else: cls()
+        print("Меню действий:\n"+\
+              "[1] Открыть PDF-файл\n[2] Ввести отчет\n[3] Обнулить отчет\n[4] Переименовать/переместить\n[5] Удалить")
+        while 1:
+            option = input("Введите номер варианта или Enter для отмены: ").strip()
+            if option == "":
+                cls()
+                break
+            else:
+                try: option = int(option)
+                except: continue
+            if option == 1:
+                print("Открываю PDF-файл...")
+                if os.path.exists(Pub[line][0]):
+                    webbrowser.open(Pub[line][0])
+                else:
+                    print("PDF-файл возвещателя отсутствует в базе!")
+                break
+            elif option == 2:
+                print("Внимание! Отчеты вводятся так, как показано на подсказке по\n"+\
+                      "командам выше. Если вам это непонятно, введите «?» и почитайте\n"+\
+                      "онлайн-справку.")
+                break
+            elif option == 3:
+                Pub[line][1] = Pub[line][2] = Pub[line][3] = 0
+                print("Отчет возвещателя обнулен.")
+                save()
+                break
+            elif option == 4:
+                while 1:
+                    new_name = input("Переименование возвещателя\nВведите новое название файла или Enter для отмены: ").strip()
+                    if new_name != "":
+                        Pub_rename(line, new_name)
+                        break
+                    else:
+                        cls()
+                        break
+                break
+            elif option == 5:
+                result = Pub_delete(line)
+                if result == False: continue # Pub_delete возвращает False, если нельзя удалить файл, потому что он открыт
+                else: break
 
     elif line is not None and process: # открытие возвещателя с вводом статистики
         Pub[line] = [Pub[line][0], myinput[1], myinput[2], myinput[3]]
         save()
-        auto = ". Поставьте курсор мыши в\nполе «Часы» и нажмите на кнопку «Insert»..." if Auto else "..."
-        print(f"База обновлена, открываю PDF-файл{auto}")
+        print(f"База обновлена, открываю PDF-файл. Поставьте курсор мыши в\nполе «Часы» и нажмите на кнопку «Insert»...")
         webbrowser.open(Pub[line][0])
         for i in myinput[1:5]: Values.append(i)
-
     return line
 
-def recreate(confirm=False):
+def generate():
     """ Генерация новой базы данных возвещателей из папок """
-    result = False
-    choice = 0
-    if confirm:
-        try: choice = int(input(
-            "Внимание! Данная операция заново создает базу данных программы\n"+\
-            "путем сканирования папок с PDF-файлами. При этом все отчеты\n"+\
-            "за месяц удаляются. Текущий файл базы данных не удаляется, а\n"+\
-            "сохраняется в папке «Архив». Обычно это стоит делать в начале\n"+\
-            "нового месяца. Продолжать?\n[1] Да\n[0] Нет\n"))
-        except: pass
-    if not confirm or choice == 1:
-        files = []
-        for p in Subpath:
-            if os.path.exists(p):
-                files += [p + f for f in os.listdir(p) if isfile(join(p, f))]
-        files.sort(key=lambda x: x[0])
-        if os.path.exists(Filename):
-            savedTime = time.strftime("%Y-%m-%d_%H%M%S", time.localtime())
-            if not os.path.exists(f"{Root_path}\\Архив"):
-                os.makedirs(f"{Root_path}\\Архив")
-            copyfile(Filename, f"{Root_path}\\Архив\\publishers-{savedTime}.txt")
-        with open(Filename, "w", encoding="utf-8") as datafile:
-            print("База данных сгенерирована из папок.")
-            for row in files:
-                datafile.write(f"{row}\t0\t0\t0\n")
-        result = True
-    return result
+    print("Генерирую базу данных из папок...")
+    files = []
+    for p in Subpath:
+        if os.path.exists(p):
+            files += [p + f for f in os.listdir(p) if isfile(join(p, f))]
+    files.sort(key=lambda x: x[0])
+    with open(Filename, "w", encoding="utf-8") as datafile:
+        for row in files:
+            datafile.write(f"{row}\t0\t0\t0\n")
+    print("База данных сгенерирована, создан новый файл publishers.ini.")
+
+def scan():
+    """ Сканируем базу на предмет новых возвещателей"""
+    save_flag = False
+    files = []
+    for p in Subpath:
+        if os.path.exists(p):
+            files += [p + f for f in os.listdir(p) if isfile(join(p, f))]
+    for f in files:
+        for p in Pub:
+            if format_title(f) == format_title(p[0]): break
+        else:
+            Pub.append([f, 0, 0, 0])
+            save_flag = True
+    if save_flag: save()
 
 def stats(mode=1):
     """ Подсчет и вывод статистики для ввода на jw.org (команда =) """
@@ -274,18 +334,17 @@ def stats(mode=1):
 def insert_into_PDF():
     """ Вставка данных в PDF-файл """
     global Values
-    if Auto:
-        for i in range(len(Values)):
-            if i == 0: # часы
-                keyboard.write(str(Values[i]) if Values[i] != 0 else "")
-                if Values[1] != 0 or Values[2] != 0:
-                    keyboard.press("\t")
-                    keyboard.press("\t") # табулируем еще раз, чтобы пропустить повторные посещения
-            elif i == 1: # изучения
-                keyboard.write(str(Values[i]) if Values[i] != 0 else "")
-                if Values[2] != 0: keyboard.press("\t")
-            elif i == 2: # кредит
-                keyboard.write(f"кредит {str(Values[i])}" if Values[i] != 0 else "")
+    for i in range(len(Values)):
+        if i == 0: # часы
+            keyboard.write(str(Values[i]) if Values[i] != 0 else "")
+            if Values[1] != 0 or Values[2] != 0:
+                keyboard.press("\t")
+                keyboard.press("\t") # табулируем еще раз, чтобы пропустить повторные посещения
+        elif i == 1: # изучения
+            keyboard.write(str(Values[i]) if Values[i] != 0 else "")
+            if Values[2] != 0: keyboard.press("\t")
+        elif i == 2: # кредит
+            keyboard.write(f"кредит {str(Values[i])}" if Values[i] != 0 else "")
     Values = []
 
 def getPath():
@@ -294,13 +353,16 @@ def getPath():
     for p in Subpath:
         last = len(p)-1
         path.append(p[ len(Root_path) : last])
-    try:
-        cat = int(input(f"Выберите тип возвещателя (введите номер варианта):\n1│ {path[0]}\n2│ {path[1]}\n3│ {path[2]}\n"))
-    except: cat = 0
-    if cat==1 or cat==2 or cat==3: return Subpath[cat-1]
-    else:
-        cls()
-        return None
+    print(f"Категория возвещателя:\n[1] {path[0]}\n[2] {path[1]}\n[3] {path[2]}")
+    while 1:
+        try:
+            cat = input("Введите номер варианта или Enter для отмены: ").strip()
+            if cat == "":
+                cls()
+                return None
+            else: cat = int(cat)
+        except: continue
+        if cat==1 or cat==2 or cat==3: return Subpath[cat-1]
 
 def Pub_rename(line1, Pub2):
     # Переименовывание возвещателя.
@@ -313,7 +375,8 @@ def Pub_rename(line1, Pub2):
             os.rename(oldPubPath, newPubPath)
             Pub[line1][0] = newPubPath
         except:
-            print(f"Ошибка операции с файлами. Скорее всего, какой-то из файлов открыт.")
+            print(f"Ошибка. Либо целевой возвещатель уже существует, либо открыт\n"+\
+                  f"PDF-файл исходного возвещателя.")
             return
         else:
             save()
@@ -323,8 +386,12 @@ def list():
     """ Вывод полного списка возвещателей """
     count=0
     print(f"Полный список активных возвещателей:")
+    max_len = 10 # сначала определяем максимальную ширину колонки
     for p in Pub:
-        print(f"{'{:>3}│'.format(str(count+1))} {format_title(p[0])} {format_report_string(p)}")
+        if len(format_title(p[0])) > max_len:
+            max_len = len(format_title(p[0]))
+    for p in Pub:
+        print(f"{'{:>3})'.format(str(count+1))} {format_title(p[0], max_len=max_len)} {format_report_string(p)}")
         count+=1
 
 def remaining():
@@ -333,10 +400,10 @@ def remaining():
     print(f"Не сдали отчеты:")
     for i in range(len(Pub)):
         if Pub[i][1] + Pub[i][2] + Pub[i][3] == 0:
-            print(f"{'{:>3}│'.format(str(count+1))} {format_title(Pub[i][0])}")
+            print(f"{'{:>3})'.format(str(count+1))} {format_title(Pub[i][0])}")
             count+=1
 
-def format_title(name, cut_path=False):
+def format_title(name, max_len=5, cut_path=False):
     """ Форматирование и сокращение пути к файлу с именем возвещателя """
     cut = len(Root_path)
     name = name[cut:]
@@ -349,128 +416,118 @@ def format_title(name, cut_path=False):
             elif char != "\\":
                 string += char
             else: string += ": "
-    #return '{:<25}'.format(string)
     space = ""
-    for a in range(Max_Name_Len - len(string)): space += " "
+    for a in range(max_len - len(string)): space += " "
     return string + space
 
 def format_report_string(p):
     """ Показывает расширение строки с возвещателем, если у него есть отчет (если нет, пусто) """
-    string = ""
-    #if p[1]+p[2]+p[3] > 0: string += space
-    string += ("%3dч" % p[1]) if p[1] > 0 else "    "
+    string = " →" if p[1]+p[2]+p[3] > 0 else ""
+    string += ("%4dч" % p[1]) if p[1] > 0 else "     "
     string += ("%3dи" % p[2]) if p[2] > 0 else "    "
-    string += ("%4dк" % p[3]) if p[3] > 0 else "    "
+    string += ("%3dк" % p[3]) if p[3] > 0 else "    "
     return string
 
-def get_pub_reported():
-    count = 0
-    for p in Pub:
-        if p[1] + p[2] + p[3] > 0: count += 1
-    return '{:<20}'.format(count)
-
-def cls():
+def cls(command=None):
     """ Очистка терминала и вывод приветственной плашки """
+    def __get_pub_reported():
+        count = 0
+        for p in Pub:
+            if p[1] + p[2] + p[3] > 0: count += 1
+        return '{:<20}'.format(count)
+
     if not Devmode:
         os.system('cls' if os.name == 'nt' else 'clear')
-        update = str("{:%d.%m.%Y, %H:%M:%S}".format(datetime.datetime.strptime(time.ctime((os.path.getmtime(Filename))),"%a %b %d %H:%M:%S %Y")))
+        update = str("{:%d.%m.%Y, %H:%M:%S}".format(
+            datetime.datetime.strptime(time.ctime((os.path.getmtime(Filename))), "%a %b %d %H:%M:%S %Y")))
         print(f"┌───────────────────────────────────────────────────────────────┐")
         print(f"│ Добро пожаловать в Report Box!                                │")
         print(f"│                                                               │")
         print(f"│ Возвещателей в базе: {'{:<27}'.format(len(Pub))}              │")
-        print(f"│ C отчетами: {get_pub_reported()}                              │")
+        print(f"│ C отчетами: {__get_pub_reported()}                              │")
         print(f"│ Последнее изменение базы: {update}                │")
         print(f"│                                                               │")
         print(f"│ Введите команду и нажмите Enter:                              │")
         print(f"│                                                               │")
-        print(f"│ 1AA         выбор возвещателя (введите название файла)        │")
-        print(f"│ 1AA 5       ввести отчет возвещателя (только часы)            │")
-        print(f"│ 1AA 5 1     ввести отчет возвещателя (часы, изучения)         │")
-        print(f"│ 1AA 5 0 10  ввести отчет возвещателя (часы, изучения, кредит) │")
-        print(f"│ +2ББ        создать нового возвещателя                        │")
-        print(f"│ :           список всех возвещателей в базе                   │")
+        print(f"│ Иван        выбор возвещателя (название файла, даже частично) │")
+        print(f"│ Иван 5      ввести отчет возвещателя (только часы)            │")
+        print(f"│ Иван 5 1    ввести отчет возвещателя (часы, изучения)         │")
+        print(f"│ Иван 5 0 8  ввести отчет возвещателя (часы, изучения, кредит) │")
+        print(f"│ +Пётр       создать нового возвещателя                        │")
+        print(f"│ :           список всех возвещателей                          │")
         print(f"│ !           кто не сдал отчет                                 │")
-        print(f"│ =           статистика собрания для общего отчета             │")
-        print(f"│ *           перезагрузка базы данных                          │")
+        print(f"│ =           статистика собрания                               │")
+        print(f"│ *           обнулить все отчеты                               │")
         print(f"│ ?           ничего не понимаю, что здесь происходит?          │")
         print(f"└───────────────────────────────────────────────────────────────┘")
+    if command is not None:
+        print(f"> {command}")
 
 def update():
     """ Проверяем новую версию и при наличии обновляем программу с GitHub """
+    if Devmode: return
     def __update(threadName, delay):
         try:
             for line in requests.get("https://raw.githubusercontent.com/antorix/Report-Box/master/version"):
                 newVersion = int(line.decode('utf-8').strip())
-        except: print("Не удалось проверить обновления.")
+        except: pass
         else:
-            print("Успешно подключились к серверу обновлений.")
-            print(f"Версия на сайте: {newVersion}")
             if newVersion > Version:
-                print("Найдена новая версия, скачиваем.")
-                """response = requests.get("https://github.com/antorix/Rocket-Ministry/archive/refs/heads/master.zip")
-                import tempfile
-                file = tempfile.TemporaryFile()
-                file.write(response.content)
-                file.close()            
-                #result = True"""
-            else: print("Обновлений нет.")
-    if Update: _thread.start_new_thread(__update, ("Thread-Update", 3,))
+                try:
+                    response = requests.get("https://github.com/antorix/Report-Box/archive/refs/heads/master.zip")
+                    import tempfile
+                    import zipfile
+                    file = tempfile.TemporaryFile()
+                    file.write(response.content)
+                    fzip = zipfile.ZipFile(file)
+                    fzip.extractall("")
+                    file.close()
+                    os.remove(f"{Root_path}\\reportbox.py")
+                    downloadedFolder = f"{Root_path}\\Report-Box-master"
+                    shutil.move(f"{downloadedFolder}\\reportbox.py", Root_path)
+                    shutil.rmtree(downloadedFolder)
+                except: pass
+                else: print("Найдена новая версия программы, она обновится при\nследующем запуске!")
+            else: pass
+    _thread.start_new_thread(__update, ("Thread-Update", 3,))
 
 ###
 
-try: # проверяем, будет ли работать автоматизация клавиатуры (не работает на мобильных устройствах)
-    keyboard.add_hotkey('insert', insert_into_PDF)
-except:
-    Auto = False
-    print("Не удалось задействовать автоматизацию клавиатуры. Вам придется\n"+\
-          "вводить значения в поля PDF-файлов вручную.")
-else: Auto = True
-
-for p in Subpath: # создаем папки, если их нет
-    if not os.path.exists(p): os.makedirs(p)
-
-print("Ищу базу данных...") # начальная загрузка базы данных
-Pub=load()
-if Pub==[] and not os.path.exists(Filename):
-    print("Генерирую базу данных из папок...")
-    recreate()
-    Pub=load()
-
-cls()
-
 update()
+for p in Subpath:
+    if not os.path.exists(p): os.makedirs(p) # создаем папки возвещателей, если их нет
+if not os.path.exists(Filename): generate()
+Pub=load()
+scan()
+keyboard.add_hotkey('insert', insert_into_PDF) # регистрируем горячую клавишу
+cls()
 
 while 1: # главный цикл программы
 
-    Max_Name_Len = 0 # определение максимальной длины первой колонки в списках возвещателей
-    for p in Pub:
-        if len(format_title(p[0])) > Max_Name_Len:
-            Max_Name_Len = len(format_title(p[0]))
-
     command=input("> ").strip()
+    scan() # после каждого ввода проверяем папки
     if command=="":
         cls()
         continue
     elif command=="?": # открытие справки в онлайне
-        cls()
+        cls(command)
         print("Открываю онлайн-справку...")
-        webbrowser.open("https://github.com/antorix/secretary/blob/master/readme.md")
+        webbrowser.open("https://github.com/antorix/Report-Box/blob/master/README.md#установка-и-начало-работы")
     elif command=="=": # статистика
-        cls()
+        cls(command)
         stats()
     elif command=="!": # кто не сдал отчет
-        cls()
+        cls(command)
         remaining()
     elif command==":": # показ всех возвещателей
-        cls()
+        cls(command)
         list()
     elif command[0]=="+" and len(command)>1: # добавление нового возвещателя
-        cls()
+        cls(command)
         Pub_add(command)
-    elif command[0]=="*":
-        cls()
-        result = recreate(confirm=True)
-        if result: Pub = load()
+    elif command[0]=="*": # обнуление отчетов
+        cls(command)
+        nullify()
 
     elif "doc=off" in command.lower(): # команды в недокументированном режиме (не описаны в документации)
         Docmode = False
