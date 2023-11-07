@@ -212,7 +212,7 @@ def search(myinput, process=True):
                     cls()
                     return None
                 elif not Docmode and (value=="groups" or value=="!"):
-                    webbrowser.open("https://docs.google.com/spreadsheets/d/1POVv-2nM4rGd6-MOITwA-0hNHmqHe9QH/edit#gid=1676049882")
+                    webbrowser.open("")
                 else:
                     line=found[int(value)-1]
                     print(f"Ваш выбор:\n{Bullet} {format_title(Pub[line][0])} {format_report_string(Pub[line])}")
@@ -551,11 +551,11 @@ while 1: # главный цикл программы
         Pub=load()
         save()
     elif command=="groups" and not Docmode: # показ групп в онлайне
-        webbrowser.open("https://docs.google.com/spreadsheets/d/1POVv-2nM4rGd6-MOITwA-0hNHmqHe9QH/edit#gid=1676049882")
+        webbrowser.open("")
     elif command=="folder" and not Docmode: # открытие папки файлов в проводнике
         webbrowser.open(Root_path)
     elif command=="share" and not Docmode: # открытие ShareFile
-        webbrowser.open("https://watchtower.sharefile.com/home/shared/fo64dbb7-f1c2-4683-b2e6-f53959f02435")
+        webbrowser.open("")
     elif command=="picalc" and not Docmode: # подсчет статистики пионеров
         ex.piCalc()
 
