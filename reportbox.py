@@ -86,8 +86,8 @@ def fetch(command):
     for delimeter in [" ", "\t"]:
         try:
             if delimeter in command:
-                name=command[: command.index(delimeter)]
-                stats=command[command.index(delimeter)+1 :]
+                name=command[: command.index(delimeter)].strip()
+                stats=command[command.index(delimeter)+1 :].strip()
                 tPos=[0]
                 for y in range(len(stats)):  # выяснение положений табуляций
                     if stats[y]==delimeter: tPos.append(y)
@@ -182,7 +182,7 @@ def Pub_add(string):
 
 def search(myinput, process=True):
     """ Поиск возвещателя и ввод его данных. Возвращает индекс строки в массиве Pub с этим возвещателем """
-    name=myinput[0]
+    name=myinput[0].strip()
     line = None
     found=[]
     max_len = 0
@@ -348,6 +348,7 @@ def insert_into_PDF():
             if Values[2] != 0: keyboard.press("\t")
         elif i == 2: # кредит
             keyboard.write(f"кредит {str(Values[i])}" if Values[i] != 0 else "")
+    keyboard.press("ctrl+s")
     Values = []
 
 def getPath():
