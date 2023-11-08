@@ -7,7 +7,7 @@ Subpath = []
 Subpath.append(Root_path + "Возвещатели\\") # подпапки с файлами бланков S-21
 Subpath.append(Root_path + "Подсобные пионеры\\")
 Subpath.append(Root_path + "Общие пионеры\\")
-Version = 1
+Version = 2
 Filename = Root_path + "publishers.ini" # файл с собственной базой данных возвещателей
 Values = []
 Bullet = "•" #→●•○▪
@@ -212,7 +212,7 @@ def search(myinput, process=True):
                     cls()
                     return None
                 elif not Docmode and (value=="groups" or value=="!"):
-                    webbrowser.open("")
+                    webbrowser.open(ex.groups_link)
                 else:
                     line=found[int(value)-1]
                     print(f"Ваш выбор:\n{Bullet} {format_title(Pub[line][0])} {format_report_string(Pub[line])}")
@@ -264,11 +264,12 @@ def search(myinput, process=True):
                 else: break
 
     elif line is not None and process: # открытие возвещателя с вводом статистики
+        print(f"Режим ввода отчета. Открываю PDF-файл...")
         Pub[line] = [Pub[line][0], myinput[1], myinput[2], myinput[3]]
         save()
-        print(f"База обновлена, открываю PDF-файл. Поставьте курсор мыши в\nполе «Часы» и нажмите на кнопку «Insert»...")
         webbrowser.open(Pub[line][0])
         for i in myinput[1:5]: Values.append(i)
+        print("Поставьте курсор мыши в поле «Часы» отчетного месяца и\nнажмите на кнопку «Insert».")
     return line
 
 def generate():
@@ -551,11 +552,11 @@ while 1: # главный цикл программы
         Pub=load()
         save()
     elif command=="groups" and not Docmode: # показ групп в онлайне
-        webbrowser.open("")
+        webbrowser.open(ex.groups_link)
     elif command=="folder" and not Docmode: # открытие папки файлов в проводнике
         webbrowser.open(Root_path)
     elif command=="share" and not Docmode: # открытие ShareFile
-        webbrowser.open("")
+        webbrowser.open("https://watchtower.sharefile.com/home/shared/fo64dbb7-f1c2-4683-b2e6-f53959f02435")
     elif command=="picalc" and not Docmode: # подсчет статистики пионеров
         ex.piCalc()
 
