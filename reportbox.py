@@ -301,7 +301,7 @@ def scan():
     if save_flag: save()
 
 def stats(mode=1):
-    """ Подсчет и вывод статистики для ввода на jw.org (команда =) """
+    """ Подсчет и вывод статистики """
     global Values
     def printStat(): # вывод статистики
         print("Активные возвещатели: %d\n" % len(Pub))
@@ -326,7 +326,7 @@ def stats(mode=1):
         printStat()
     elif mode==2: # ввод статистики на сайте
         printStat()
-        webbrowser.open("https://hub.jw.org/congregation-reports/ru/a1b222ff-99b5-4021-8b12-be9bafe86234/overview")
+        webbrowser.open(ex.J_link)
         print("Жду окончания ввода...")
         Values = [    str(len(Pub)),
                     str(int(countP)),  str(int(countP_Pub)),    str(int(countP_Vid)),   str(int(countP_Hours)),  str(int(countP_Ret)),  str(int(countP_St)),
@@ -552,7 +552,7 @@ while 1: # главный цикл программы
         Pub=load()
         save()
     elif command=="groups" and not Docmode: # показ групп в онлайне
-        webbrowser.open(ex.groups_link)
+        webbrowser.open(ex.Groups_link)
     elif command=="folder" and not Docmode: # открытие папки файлов в проводнике
         webbrowser.open(Root_path)
     elif command=="share" and not Docmode: # открытие ShareFile
