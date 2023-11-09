@@ -21,7 +21,13 @@ import tkinter
 import tkinter.messagebox
 import tkinter.filedialog
 import datetime
-import requests
+try:
+    import requests
+except:
+    from subprocess import check_call
+    from sys import executable
+    check_call([executable, '-m', 'pip', 'install', 'requests'])
+    import requests
 import _thread
 from sys import argv
 if not Docmode: import extras as ex
